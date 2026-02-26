@@ -1,0 +1,84 @@
+{
+    "text": {
+        "name": "Giovanni Rossi",
+        "contact": "1920 - 1995"
+    },
+    "spouse": {
+        "name": "Luisa Verdi",
+        "title": "Moglie",
+        "contact": "1922 - 1998"
+    },
+    "children": [
+        {
+            "text": {
+                "name": "Maria Rossi",
+                "contact": "1945 - Presente"
+            },
+            "spouse": {
+                "name": "Giuseppe Bianchi",
+                "title": "Marito",
+                "contact": "1942 - 2015"
+            },
+            "children": [
+                {
+                    "text": {
+                        "name": "Luca Bianchi",
+                        "contact": "1970 - Presente"
+                    },
+                    "spouse": {
+                        "name": "Elena Neri",
+                        "title": "Moglie",
+                        "contact": "1972 - Presente"
+                    }
+                },
+                {
+                    "text": {
+                        "name": "Elena Bianchi",
+                        "contact": "1972 - Presente"
+                    }
+                }
+            ]
+        },
+        {
+            "text": {
+                "name": "Pietro Rossi",
+                "contact": "1948 - 2010"
+            },
+            "spouse": {
+                "name": "Carla Neri",
+                "title": "Moglie",
+                "contact": "1950 - Presente"
+            },
+            "children": [
+                {
+                    "text": {
+                        "name": "Marco Rossi",
+                        "contact": "1975 - Presente"
+                    },
+                    "children": [
+                        {
+                            "text": {
+                                "name": "Sofia Rossi",
+                                "contact": "2005 - Presente"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "text": {
+                "name": "Anna Rossi",
+                "contact": "1952 - Presente"
+            },
+            "children": [
+                {
+                    "text": {
+                        "name": "Giulia Verdi",
+                        "contact": "1980 - Presente"
+                    }
+                }
+            ]
+        }
+    ]
+}

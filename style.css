@@ -1,0 +1,136 @@
+body {
+    font-family: 'Poppins', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+header {
+    background: linear-gradient(135deg, #212529 0%, #343a40 100%);
+}
+
+.treant-container {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: visible !important;
+    background-color: #ffffff;
+}
+
+.node {
+    padding: 10px;
+    border-radius: 12px;
+    background-color: #ffffff;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    cursor: pointer !important;
+}
+
+.treant-instance {
+    min-height: 400px;
+}
+
+.node:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    border-color: #0d6efd;
+}
+
+.single-node {
+    width: 180px;
+}
+
+.couple-node {
+    width: 380px;
+    padding: 0;
+}
+
+.person-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.person {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+
+.spouse-separator {
+    width: 2px;
+    background-color: #e9ecef;
+    height: 60px;
+    margin: 10px 5px 0;
+}
+
+.bloodline-person .node-name {
+    color: #0d6efd;
+    font-weight: 700;
+}
+
+.spouse-person .node-name {
+    color: #fd7e14;
+    font-weight: 600;
+}
+
+.node-contact {
+    font-size: 0.75rem;
+    color: #999;
+    margin-top: 2px;
+    margin-bottom: 0;
+}
+
+.node-name {
+    font-size: 1rem;
+    margin-top: 0;
+    margin-bottom: 2px;
+}
+
+.node-title {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-style: italic;
+    margin-top: -2px;
+}
+
+.virtual-root {
+    display: none !important;
+}
+
+.treant-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.treant-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.treant-container::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+.treant-container::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+@media (max-width: 768px) {
+    .single-node {
+        width: 140px;
+    }
+    .couple-node {
+        width: 280px;
+    }
+    .node-name {
+        font-size: 0.85rem;
+    }
+    .node-title, .node-contact {
+        font-size: 0.7rem;
+    }
+    .spouse-separator {
+        height: 50px;
+    }
+}
