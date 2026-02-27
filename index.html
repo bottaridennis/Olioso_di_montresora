@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Olioso del montresora</title>
     
     <!-- Bootstrap 5 CSS -->
@@ -19,21 +19,44 @@
     <!-- Panzoom -->
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
     
+    <!-- html2canvas for Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column">
 
     <header class="bg-dark text-white py-3 shadow-sm">
-        <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
+        <div class="container-fluid px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div>
                 <h1 class="h3 mb-0 fw-bold">Olioso del montresora</h1>
                 <p class="small mb-0 opacity-75">Esplora la storia e le radici della nostra famiglia</p>
             </div>
-            <div class="text-end">
-                <a href="admin.html" class="btn btn-outline-light btn-sm me-2">Gestione Admin</a>
+            
+            <div class="flex-grow-1 mx-md-4" style="max-width: 400px;">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search">🔍</i></span>
+                    <input type="text" id="search-input" class="form-control border-start-0 ps-0" placeholder="Cerca un membro della famiglia..." autocomplete="off">
+                </div>
+                <div id="search-results" class="position-absolute bg-white text-dark shadow rounded-3 mt-1 d-none z-3 overflow-auto" style="max-height: 300px; width: inherit; min-width: 250px;">
+                    <!-- Risultati della ricerca -->
+                </div>
+            </div>
+
+            <div class="text-end d-flex gap-2 align-items-center">
+                <div class="d-flex align-items-center me-2 d-none d-md-flex">
+                    <label for="gen-filter" class="small me-2 text-nowrap">Generazioni:</label>
+                    <input type="range" class="form-range" id="gen-filter" min="1" max="10" value="10" style="width: 80px;">
+                    <span id="gen-value" class="small ms-2 fw-bold">10</span>
+                </div>
+                <select id="tree-orientation" class="form-select form-select-sm" style="width: auto;">
+                    <option value="NORTH">Verticale</option>
+                    <option value="WEST">Orizzontale</option>
+                </select>
+                <a href="admin.html" class="btn btn-outline-light btn-sm">Gestione Admin</a>
                 <button class="btn btn-outline-light btn-sm" id="zoom-reset">Reset Vista</button>
             </div>
         </div>
@@ -44,6 +67,24 @@
         <div class="zoom-controls shadow border rounded-3 p-1 bg-white position-absolute top-0 start-0 m-4 z-3">
             <button class="btn btn-light btn-sm d-block mb-1 fw-bold" id="zoom-in" title="Zoom In">+</button>
             <button class="btn btn-light btn-sm d-block mb-1 fw-bold" id="zoom-out" title="Zoom Out">-</button>
+            <button class="btn btn-light btn-sm d-block mb-1 fw-bold" id="export-image" title="Esporta Immagine">📸</button>
+        </div>
+
+        <!-- Legend & Stats -->
+        <div class="info-panel shadow border rounded-3 p-3 bg-white position-absolute top-0 end-0 m-4 z-3" style="max-width: 250px;">
+            <h6 class="fw-bold mb-2">Legenda & Statistiche</h6>
+            <div class="d-flex align-items-center mb-1 small">
+                <span class="d-inline-block rounded-circle me-2" style="width: 12px; height: 12px; background-color: #0d6efd;"></span>
+                <span>Linea di sangue</span>
+            </div>
+            <div class="d-flex align-items-center mb-3 small">
+                <span class="d-inline-block rounded-circle me-2" style="width: 12px; height: 12px; background-color: #fd7e14;"></span>
+                <span>Coniugi / Partner</span>
+            </div>
+            <hr class="my-2">
+            <div id="family-stats" class="small text-muted">
+                Caricamento statistiche...
+            </div>
         </div>
 
         <div id="family-tree" class="treant-container">
@@ -55,6 +96,35 @@
         </div>
     </main>
 
+    <!-- Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-0 text-center">
+                    <div class="mb-3">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <span class="h1 mb-0 text-primary">👤</span>
+                        </div>
+                    </div>
+                    <h3 id="modal-name" class="fw-bold mb-1"></h3>
+                    <p id="modal-contact" class="text-muted mb-3"></p>
+                    <div id="modal-bio" class="text-start mb-3 small" style="white-space: pre-line;"></div>
+                    <div id="modal-extra-info" class="text-start p-3 bg-light rounded-3 d-none">
+                        <!-- Altre informazioni -->
+                    </div>
+                </div>
+                <div class="modal-footer border-0 justify-content-center">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="supabase-config.js"></script>
     <script src="script.js"></script>
 </body>

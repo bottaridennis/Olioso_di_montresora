@@ -10,6 +10,7 @@ CREATE TABLE family_members (
     title TEXT, -- Usato per "Moglie", "Marito", ecc.
     parent_id UUID REFERENCES family_members(id) ON DELETE CASCADE, -- ID del genitore (linea di sangue)
     spouse_id UUID REFERENCES family_members(id) ON DELETE SET NULL, -- ID del partner (se questo record è un coniuge)
+    bio TEXT, -- Note biografiche o storiche
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

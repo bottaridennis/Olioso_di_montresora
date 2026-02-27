@@ -3,7 +3,9 @@ initSupabase();
 
 let panzoomInstance;
 let familyData = null;
+let allMembersFlat = []; // Store for list view and search
 let editModal = null;
+let adminToast = null;
 let currentUser = null;
 
 // Initialize when the DOM is loaded
@@ -14,6 +16,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    
+    const toastEl = document.getElementById('adminToast');
+    if (toastEl) {
+        adminToast = new bootstrap.Toast(toastEl, { delay: 3000 });
+    }
     
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
         const errorDiv = document.getElementById('login-error');
@@ -49,6 +56,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     const backupBtn = document.getElementById('btn-create-backup');
     if (backupBtn) {
         backupBtn.addEventListener('click', createBackup);
+    }
+
+    // List search listener
+    const listSearchInput = document.getElementById('admin-search-input');
+    if (listSearchInput) {
+        listSearchInput.addEventListener('input', (e) => {
+            renderListView(e.target.value.toLowerCase().trim());
+        });
     }
 });
 
@@ -105,15 +120,54 @@ async function loadData() {
         const { data, error } = await supabaseClient
             .from('family_members')
             .select('*')
-            .order('created_at', { ascending: true });
+            .order('name', { ascending: true }); // Order by name for the list view
 
         if (error) throw error;
         
+        allMembersFlat = data;
         familyData = buildTreeHierarchy(data);
         renderTreeEditor();
+        renderListView();
     } catch (error) {
         console.error("Could not fetch family data:", error);
     }
+}
+
+function renderListView(filter = "") {
+    const listBody = document.getElementById('admin-list-body');
+    if (!listBody) return;
+
+    const filtered = allMembersFlat.filter(m => 
+        m.name.toLowerCase().includes(filter) || 
+        (m.contact && m.contact.toLowerCase().includes(filter))
+    );
+
+    if (filtered.length === 0) {
+        listBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Nessun membro trovato.</td></tr>';
+        return;
+    }
+
+    listBody.innerHTML = filtered.map(m => `
+        <tr>
+            <td>
+                <div class="fw-bold">${m.name}</div>
+            </td>
+            <td>
+                <span class="small text-muted">${m.contact || '-'}</span>
+            </td>
+            <td>
+                <span class="badge ${m.spouse_id ? 'bg-warning text-dark' : 'bg-primary'}">
+                    ${m.spouse_id ? (m.title || 'Coniuge') : 'Linea di sangue'}
+                </span>
+            </td>
+            <td class="text-end">
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editPerson('${m.id}', '${m.spouse_id ? 'spouse' : 'bloodline'}')">Modifica</button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteNode('${m.id}')">Elimina</button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
 }
 
 function buildTreeHierarchy(members) {
@@ -163,13 +217,13 @@ function transformAdminData(node) {
         treantNode.innerHTML = `
             <div class="person-container">
                 <div class="person bloodline-person admin-person-card">
-                    <p class="node-name">${node.name}</p>
+                    <p class="node-name"><span class="node-icon">👤</span>${node.name}</p>
                     <p class="node-contact">${node.contact || ''}</p>
                     ${bloodlineActions}
                 </div>
                 <div class="spouse-separator"></div>
                 <div class="person spouse-person admin-person-card">
-                    <p class="node-name">${node.spouse_data.name}</p>
+                    <p class="node-name"><span class="node-icon">⚭</span>${node.spouse_data.name}</p>
                     ${node.spouse_data.title ? `<p class="node-title">${node.spouse_data.title}</p>` : ''}
                     <p class="node-contact">${node.spouse_data.contact || ''}</p>
                     <div class="admin-actions">
@@ -184,7 +238,7 @@ function transformAdminData(node) {
         treantNode.HTMLclass = "node single-node";
         treantNode.innerHTML = `
             <div class="person single-person bloodline-person admin-person-card">
-                <p class="node-name">${node.name}</p>
+                <p class="node-name"><span class="node-icon">👤</span>${node.name}</p>
                 <p class="node-contact">${node.contact || ''}</p>
                 ${bloodlineActions}
             </div>
@@ -237,11 +291,16 @@ function renderTreeEditor() {
                         if (d) {
                             const parts = d.split(/[ ,MLZ]/);
                             const y = parseFloat(parts[2]);
-                            if (y < 50) {
-                                path.style.display = 'none';
-                            }
+                            if (y < 50) path.style.display = 'none';
                         }
                     });
+                    
+                    // Adatta la vista non appena l'albero è caricato
+                    setTimeout(() => {
+                        if (panzoomInstance) {
+                            fitToScreen(subContainer);
+                        }
+                    }, 100);
                 }
             },
             connectors: { type: "step", style: { "stroke-width": 2, "stroke": "#ccc" } }
@@ -249,7 +308,7 @@ function renderTreeEditor() {
         nodeStructure: virtualRoot
     };
     new Treant(chart_config);
-    initPanzoom(container);
+    initPanzoom(subContainer);
 }
 
 function initPanzoom(element) {
@@ -259,25 +318,25 @@ function initPanzoom(element) {
 
     panzoomInstance = Panzoom(element, {
         maxScale: 5,
-        minScale: 0.1,
+        minScale: 0.05,
         canvas: true,
         cursor: 'grab',
+        touchAction: 'none',
         filter: (e) => {
             return !e.target.classList.contains('action-btn');
         }
     });
 
-    document.getElementById('zoom-in').addEventListener('click', () => panzoomInstance.zoomIn());
-    document.getElementById('zoom-out').addEventListener('click', () => panzoomInstance.zoomOut());
+    document.getElementById('zoom-in').addEventListener('click', () => panzoomInstance.zoomIn({ animate: true }));
+    document.getElementById('zoom-out').addEventListener('click', () => panzoomInstance.zoomOut({ animate: true }));
     document.getElementById('zoom-reset').addEventListener('click', () => fitToScreen(element));
 
-    element.parentElement.addEventListener('wheel', (event) => {
+    // Support pinch zoom and double tap on mobile
+    element.addEventListener('wheel', (event) => {
         if (!event.ctrlKey && !event.metaKey) return;
         event.preventDefault();
         panzoomInstance.zoomWithWheel(event);
     }, { passive: false });
-
-    setTimeout(() => fitToScreen(element), 800);
 }
 
 function fitToScreen(element) {
@@ -316,7 +375,7 @@ function fitToScreen(element) {
     const scaleY = (parentHeight - padding * 2) / contentHeight;
     
     let scale = Math.min(scaleX, scaleY);
-    scale = Math.min(Math.max(scale, 0.1), 1); 
+    scale = Math.min(Math.max(scale, 0.05), 1.2); 
 
     panzoomInstance.zoom(scale, { animate: true });
     
@@ -324,6 +383,54 @@ function fitToScreen(element) {
     const offsetY = (parentHeight / 2) - (minY + contentHeight / 2) * scale;
     
     panzoomInstance.pan(offsetX, offsetY, { animate: true });
+}
+
+let resizeTimer;
+let lastWidth = window.innerWidth;
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+        const currentWidth = window.innerWidth;
+        // Solo se la larghezza cambia significativamente (evita trigger da scroll mobile che nasconde/mostra barra indirizzi)
+        if (Math.abs(currentWidth - lastWidth) > 50) {
+            lastWidth = currentWidth;
+            const adminContainer = document.getElementById('tree-editor-container');
+            if (adminContainer) {
+                adminContainer.innerHTML = '';
+                renderTreeEditor();
+            }
+        } else {
+            // Altrimenti adatta solo la vista esistente
+            const adminContainer = document.getElementById('tree-editor-container');
+            if (adminContainer) {
+                const subContainer = adminContainer.querySelector('.treant-instance');
+                if (subContainer) {
+                    fitToScreen(subContainer);
+                }
+            }
+        }
+    }, 250);
+});
+
+function showToast(message, type = 'success') {
+    const toastEl = document.getElementById('adminToast');
+    const toastMsg = document.getElementById('toast-message');
+    
+    if (!toastEl || !toastMsg) return;
+    
+    toastMsg.innerText = message;
+    
+    // Set color based on type
+    toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'text-white');
+    if (type === 'success') {
+        toastEl.classList.add('bg-success', 'text-white');
+    } else if (type === 'danger') {
+        toastEl.classList.add('bg-danger', 'text-white');
+    } else if (type === 'warning') {
+        toastEl.classList.add('bg-warning', 'text-dark');
+    }
+    
+    if (adminToast) adminToast.show();
 }
 
 // JSON Upload and Backup
@@ -352,11 +459,11 @@ async function handleFileUpload(e) {
             // 3. Insert new data
             await performImport(json);
             
-            alert("Importazione completata con successo! Un backup è stato creato automaticamente.");
+            showToast("Importazione completata con successo!");
             loadData();
         } catch (error) {
             console.error(error);
-            alert("Errore durante l'importazione: " + error.message);
+            showToast("Errore durante l'importazione: " + error.message, 'danger');
         } finally {
             e.target.value = '';
         }
@@ -394,7 +501,7 @@ async function createBackup(showConfirm = true) {
         if (error) throw error;
 
         if (data.length === 0 && showConfirm) {
-            alert("Nessun dato da salvare nel backup.");
+            showToast("Nessun dato da salvare nel backup.", 'warning');
             return;
         }
 
@@ -415,30 +522,39 @@ async function createBackup(showConfirm = true) {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        if (showConfirm) alert("Backup creato e scaricato correttamente.");
+        if (showConfirm) showToast("Backup creato e scaricato correttamente.");
     } catch (error) {
         console.error("Errore backup:", error);
-        alert("Errore durante la creazione del backup.");
+        showToast("Errore durante la creazione del backup.", 'danger');
     }
 }
 
 // CRUD Operations
 window.addRoot = async function() {
     const { error } = await supabaseClient.from('family_members').insert([{ name: "Nuovo Capostipite" }]);
-    if (error) alert(error.message);
-    else loadData();
+    if (error) showToast(error.message, 'danger');
+    else {
+        showToast("Nuovo capostipite aggiunto!");
+        loadData();
+    }
 }
 
 window.addChild = async function(parentId) {
     const { error } = await supabaseClient.from('family_members').insert([{ name: "Nuovo Figlio", parent_id: parentId }]);
-    if (error) alert(error.message);
-    else loadData();
+    if (error) showToast(error.message, 'danger');
+    else {
+        showToast("Figlio aggiunto con successo!");
+        loadData();
+    }
 }
 
 window.addSpouse = async function(partnerId) {
     const { error } = await supabaseClient.from('family_members').insert([{ name: "Nuovo Coniuge", spouse_id: partnerId, title: "Moglie" }]);
-    if (error) alert(error.message);
-    else loadData();
+    if (error) showToast(error.message, 'danger');
+    else {
+        showToast("Coniuge aggiunto con successo!");
+        loadData();
+    }
 }
 
 window.editPerson = async function(id, type) {
@@ -449,6 +565,7 @@ window.editPerson = async function(id, type) {
     document.getElementById('edit-type').value = type;
     document.getElementById('input-name').value = data.name;
     document.getElementById('input-contact').value = data.contact || '';
+    document.getElementById('input-bio').value = data.bio || '';
     
     const titleContainer = document.getElementById('title-field-container');
     if (data.spouse_id) {
@@ -465,25 +582,46 @@ async function saveModalData() {
     const id = document.getElementById('edit-id').value;
     const name = document.getElementById('input-name').value;
     const contact = document.getElementById('input-contact').value;
+    const bio = document.getElementById('input-bio').value;
     const title = document.getElementById('input-title').value;
     
-    const updates = { name, contact };
+    if (!name.trim()) {
+        showToast("Il nome è obbligatorio.", 'warning');
+        return;
+    }
+
+    const saveBtn = document.getElementById('btn-save-modal');
+    const originalText = saveBtn.innerText;
+    saveBtn.innerText = "Salvataggio...";
+    saveBtn.disabled = true;
+    
+    const updates = { name, contact, bio };
     if (document.getElementById('edit-type').value === 'spouse') {
         updates.title = title;
     }
     
-    const { error } = await supabaseClient.from('family_members').update(updates).eq('id', id);
-    if (error) alert(error.message);
-    else {
+    try {
+        const { error } = await supabaseClient.from('family_members').update(updates).eq('id', id);
+        if (error) throw error;
+        
         editModal.hide();
+        showToast("Dati salvati correttamente!");
         loadData();
+    } catch (error) {
+        showToast("Errore durante il salvataggio: " + error.message, 'danger');
+    } finally {
+        saveBtn.innerText = originalText;
+        saveBtn.disabled = false;
     }
 }
 
 window.deleteNode = async function(id) {
     if (confirm("Sei sicuro? Se è un membro della linea di sangue, verrà eliminata anche tutta la discendenza.")) {
         const { error } = await supabaseClient.from('family_members').delete().eq('id', id);
-        if (error) alert(error.message);
-        else loadData();
+        if (error) showToast(error.message, 'danger');
+        else {
+            showToast("Membro eliminato.");
+            loadData();
+        }
     }
 }

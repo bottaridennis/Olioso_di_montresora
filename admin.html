@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Admin - Gestione Albero (Supabase)</title>
     
     <!-- Bootstrap 5 CSS -->
@@ -25,23 +25,71 @@
     <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
     
     <style>
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        html, body {
+            height: 100vh;
+            width: 100vw;
+            margin: 0;
+            padding: 0;
+            overflow: hidden !important;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f4f7f6;
+            display: flex;
+            flex-direction: column;
+        }
+        .navbar {
+            flex-shrink: 0;
+        }
+        #admin-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .admin-main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
         }
         .admin-tree-container {
+            position: relative;
+            flex: 1;
             width: 100%;
-            min-height: 600px;
+            height: 100%;
             background: white;
             border-radius: 15px;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
-            overflow: visible !important;
-            margin-bottom: 50px;
+            overflow: hidden !important; /* Viewport for Panzoom */
+            touch-action: none;
+            user-select: none;
+            -webkit-user-drag: none;
         }
+
+        /* Hide scrollbars from Treant internal containers if any */
+        .Treant {
+            overflow: hidden !important;
+        }
+
         .treant-instance {
-            margin-bottom: 50px;
-            border-bottom: 2px dashed #eee;
-            padding-bottom: 30px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            overflow: visible !important;
+        }
+
+        .treant-instance:active {
+            cursor: grabbing;
         }
         #login-container {
             max-width: 400px;
@@ -117,6 +165,7 @@
         .virtual-root {
             display: none !important;
         }
+
     </style>
 </head>
 <body>
@@ -140,7 +189,7 @@
 
     <div id="admin-content" class="d-none">
         <nav class="navbar navbar-dark bg-dark mb-4">
-            <div class="container">
+            <div class="container-fluid px-4">
                 <span class="navbar-brand">Admin Albero Genealogico</span>
                 <div>
                     <span id="user-email" class="text-light me-3 small"></span>
@@ -150,33 +199,76 @@
             </div>
         </nav>
 
-        <div class="container pb-5">
-            <div class="row">
-                <div class="col-12">
-                    <div class="alert alert-info d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-0">Gestione Dati: puoi importare un file JSON locale o gestire i backup.</p>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <input type="file" id="input-json-file" accept=".json" class="d-none">
-                            <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('input-json-file').click()">Carica JSON Locale</button>
-                            <button id="btn-create-backup" class="btn btn-sm btn-outline-secondary">Crea Backup</button>
-                        </div>
-                    </div>
+        <div class="admin-main-container">
+            <div class="alert alert-info d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <p class="mb-0">Gestione Dati: puoi importare un file JSON locale o gestire i backup.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <input type="file" id="input-json-file" accept=".json" class="d-none">
+                    <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('input-json-file').click()">Carica JSON Locale</button>
+                    <button id="btn-create-backup" class="btn btn-sm btn-outline-secondary">Crea Backup</button>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-12 position-relative">
-                    <div class="zoom-controls shadow-sm border rounded-3 p-1 bg-white position-absolute top-0 start-0 m-3 z-3">
-                        <button class="btn btn-light btn-sm d-block mb-1" id="zoom-in">+</button>
-                        <button class="btn btn-light btn-sm d-block mb-1" id="zoom-out">-</button>
-                        <button class="btn btn-light btn-sm d-block" id="zoom-reset">回</button>
+            <div class="row mb-3">
+                <div class="col-12">
+                    <ul class="nav nav-pills" id="adminTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="tree-tab" data-bs-toggle="pill" data-bs-target="#tree-view" type="button" role="tab">Vista Albero</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="list-tab" data-bs-toggle="pill" data-bs-target="#list-view" type="button" role="tab">Vista Lista</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="tab-content flex-grow-1 overflow-hidden">
+                <div class="tab-pane fade show active h-100" id="tree-view" role="tabpanel">
+                    <div class="position-relative h-100">
+                        <div class="zoom-controls shadow-sm border rounded-3 p-1 bg-white position-absolute top-0 start-0 m-3 z-3">
+                            <button class="btn btn-light btn-sm d-block mb-1" id="zoom-in" title="Zoom In">+</button>
+                            <button class="btn btn-light btn-sm d-block mb-1" id="zoom-out" title="Zoom Out">-</button>
+                            <button class="btn btn-light btn-sm d-block" id="zoom-reset" title="Reset Vista">⟲</button>
+                        </div>
+                        <div id="tree-editor-container" class="admin-tree-container">
+                            <div class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Caricamento...</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div id="tree-editor-container" class="admin-tree-container">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Caricamento...</span>
+                </div>
+                
+                <div class="tab-pane fade h-100" id="list-view" role="tabpanel">
+                    <div class="card shadow-sm border-0 rounded-3 h-100">
+                        <div class="card-header bg-white py-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h5 class="mb-0">Elenco Membri</h5>
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="text" id="admin-search-input" class="form-control form-control-sm" placeholder="Cerca membri...">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-0 overflow-auto">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Nome</th>
+                                            <th>Dettagli</th>
+                                            <th>Ruolo</th>
+                                            <th class="text-end">Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-list-body">
+                                        <!-- Membri caricati via JS -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -208,12 +300,30 @@
                             <label class="form-label">Date (es. 1950 - Presente)</label>
                             <input type="text" class="form-control" id="input-contact">
                         </div>
+                        <div class="mb-3">
+                            <label class="form-label">Note / Biografia</label>
+                            <textarea class="form-control" id="input-bio" rows="4" placeholder="Inserisci qui informazioni storiche o note personali..."></textarea>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
                     <button type="button" class="btn btn-primary" id="btn-save-modal">Salva</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal (for viewing in list mode if needed, or just use edit) -->
+    
+    <!-- Toast Notifications -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="adminToast" class="toast border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-message">
+                    <!-- Messaggio -->
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         </div>
     </div>

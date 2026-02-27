@@ -1,19 +1,57 @@
+/* Hide scrollbars globally for a cleaner app-like experience */
+::-webkit-scrollbar {
+    display: none;
+}
+
+html, body {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow: hidden !important;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
 body {
     font-family: 'Poppins', sans-serif;
     background-color: #f8f9fa;
     color: #333;
+    display: flex;
+    flex-direction: column;
 }
 
 header {
+    flex-shrink: 0;
     background: linear-gradient(135deg, #212529 0%, #343a40 100%);
 }
 
+main {
+    flex: 1;
+    position: relative;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    height: 100%; /* Ensure it fills flex parent */
+}
+
 .treant-container {
+    position: relative;
+    flex: 1;
     width: 100%;
     height: 100%;
     margin: 0;
-    overflow: visible !important;
+    overflow: hidden !important; /* Viewport for Panzoom */
     background-color: #ffffff;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+/* Hide scrollbars from Treant internal containers if any */
+.Treant {
+    overflow: hidden !important;
 }
 
 .node {
@@ -26,8 +64,22 @@ header {
     cursor: pointer !important;
 }
 
+.virtual-root {
+    display: none !important;
+}
+
 .treant-instance {
-    min-height: 400px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    overflow: visible !important; /* Let nodes and connectors show even if outside the 100% box */
+}
+
+.treant-instance:active {
+    cursor: grabbing;
 }
 
 .node:hover {
@@ -86,6 +138,24 @@ header {
     font-size: 1rem;
     margin-top: 0;
     margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+}
+
+.node-icon {
+    margin-right: 6px;
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.spouse-person {
+    background-color: #fff9f5;
+    border-radius: 8px;
+}
+
+.bloodline-person {
+    background-color: #f0f7ff;
+    border-radius: 8px;
 }
 
 .node-title {
@@ -95,8 +165,34 @@ header {
     margin-top: -2px;
 }
 
-.virtual-root {
-    display: none !important;
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.hover-bg-light:hover {
+    background-color: #f8f9fa;
+}
+
+.extra-small {
+    font-size: 0.7rem;
+}
+
+#search-results {
+    width: 100%;
+    max-width: 400px;
+}
+
+.search-item {
+    transition: background-color 0.2s;
+}
+
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 1.25rem;
+    }
+    #search-input {
+        font-size: 0.9rem;
+    }
 }
 
 .treant-container::-webkit-scrollbar {
@@ -118,6 +214,17 @@ header {
 }
 
 @media (max-width: 768px) {
+    .zoom-controls {
+        margin: 10px !important;
+    }
+    .zoom-controls .btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
     .single-node {
         width: 140px;
     }
