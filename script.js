@@ -143,6 +143,8 @@ function transformData(node, currentLevel = 0, maxLevel = 10) {
 
     if (node.spouse) {
         treantNode.HTMLclass = "node couple-node";
+        treantNode.width = 380;
+        treantNode.height = 80;
         treantNode.data = { id: node.id }; // Added for Treant but we'll also add to innerHTML
         treantNode.innerHTML = `
             <div class="person-container" data-id="${node.id}" onclick="showMemberDetails('${node.id}')">
@@ -160,6 +162,8 @@ function transformData(node, currentLevel = 0, maxLevel = 10) {
         `;
     } else {
         treantNode.HTMLclass = "node single-node";
+        treantNode.width = 180;
+        treantNode.height = 80;
         treantNode.data = { id: node.id };
         treantNode.innerHTML = `
             <div class="person single-person bloodline-person" data-id="${node.id}" onclick="showMemberDetails('${node.id}')">
@@ -212,6 +216,8 @@ async function initTree() {
     const subContainer = document.createElement('div');
     subContainer.id = subContainerId;
     subContainer.className = 'treant-instance';
+    subContainer.style.width = '100%';
+    subContainer.style.height = '100%';
     container.appendChild(subContainer);
 
     const virtualRoot = {
@@ -225,12 +231,12 @@ async function initTree() {
     const chart_config = {
         chart: {
             container: `#${subContainerId}`,
-            levelSeparation: orientation === "NORTH" ? 60 : 100,
-            siblingSeparation: orientation === "NORTH" ? 40 : 30,
-            subTeeSeparation: 40,
+            levelSeparation: orientation === "NORTH" ? 150 : 200,
+            siblingSeparation: orientation === "NORTH" ? 80 : 60,
+            subTeeSeparation: 80,
             rootOrientation: orientation,
-            nodeAlign: "BOTTOM",
-            padding: 35,
+            nodeAlign: "CENTER",
+            padding: 50,
             callback: {
                 onTreeLoaded: function(tree) {
                     const paths = document.querySelectorAll(`#${subContainerId} svg path`);
@@ -509,7 +515,9 @@ function fitToScreen(element) {
     const scaleY = (parentHeight - padding * 2) / contentHeight;
     
     let scale = Math.min(scaleX, scaleY);
-    scale = Math.min(Math.max(scale, 0.05), 1.2); // Permetti anche un leggero zoom iniziale se piccolo
+    // Imposta un limite minimo per la scala automatica (es. 0.5) per mantenere la leggibilità.
+    scale = Math.min(Math.max(scale, 0.5), 1.2); 
+
     panzoomInstance.zoom(scale, { animate: true });
     
     const offsetX = (parentWidth / 2) - (minX + contentWidth / 2) * scale;

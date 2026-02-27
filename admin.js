@@ -31,6 +31,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
+    // Set current date in header
+    const dateEl = document.getElementById('current-date');
+    if (dateEl) {
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateEl.innerText = new Date().toLocaleDateString('it-IT', options);
+    }
+
     try {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         if (error) throw error;
@@ -46,16 +53,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('btn-logout').addEventListener('click', handleLogout);
     document.getElementById('btn-save-modal').addEventListener('click', saveModalData);
     
+    // Quick backup from dashboard
+    const quickBackupBtn = document.getElementById('btn-quick-backup');
+    if (quickBackupBtn) {
+        quickBackupBtn.addEventListener('click', () => createBackup());
+    }
+
     // JSON Upload listener
     const fileInput = document.getElementById('input-json-file');
     if (fileInput) {
         fileInput.addEventListener('change', handleFileUpload);
-    }
-
-    // Backup button listener
-    const backupBtn = document.getElementById('btn-create-backup');
-    if (backupBtn) {
-        backupBtn.addEventListener('click', createBackup);
     }
 
     // List search listener
@@ -65,24 +72,67 @@ document.addEventListener('DOMContentLoaded', async function() {
             renderListView(e.target.value.toLowerCase().trim());
         });
     }
+
+    // Tree search listener
+    const treeSearchInput = document.getElementById('tree-search-input');
+    if (treeSearchInput) {
+        treeSearchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            highlightInTree(query);
+        });
+    }
+
+    // Sidebar navigation
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => {
+        item.addEventListener('click', function() {
+            const target = this.getAttribute('data-target');
+            if (!target) return; // Exit for external links
+
+            // Update active state
+            menuItems.forEach(mi => mi.classList.remove('active'));
+            this.classList.add('active');
+
+            // Switch views
+            document.querySelectorAll('.admin-view').forEach(view => {
+                view.classList.add('d-none');
+            });
+            const targetView = document.getElementById(target);
+            if (targetView) targetView.classList.remove('d-none');
+
+            // Update header title
+            const title = this.innerText.trim();
+            document.getElementById('view-title').innerText = title;
+
+            // Show/Hide tree search
+            const treeSearchWrapper = document.getElementById('tree-search-wrapper');
+            if (target === 'tree-view') {
+                treeSearchWrapper.classList.remove('d-none');
+                // Re-render or re-init if needed
+                if (panzoomInstance) setTimeout(() => fitToScreen(document.querySelector('.treant-instance')), 100);
+            } else {
+                treeSearchWrapper.classList.add('d-none');
+            }
+        });
+    });
 });
 
 function handleAuthChange(session) {
-    const loginContainer = document.getElementById('login-container');
-    const adminContent = document.getElementById('admin-content');
+    const loginScreen = document.getElementById('login-screen');
+    const adminWrapper = document.getElementById('admin-wrapper');
     
     if (session) {
         currentUser = session.user;
         const userEmailSpan = document.getElementById('user-email');
         if (userEmailSpan) userEmailSpan.innerText = currentUser.email;
         
-        loginContainer.style.display = 'none';
-        adminContent.classList.remove('d-none');
+        loginScreen.classList.add('d-none');
+        adminWrapper.classList.remove('d-none');
         loadData();
     } else {
         currentUser = null;
-        loginContainer.style.display = 'block';
-        adminContent.classList.add('d-none');
+        loginScreen.classList.remove('d-none');
+        adminWrapper.classList.add('d-none');
     }
 }
 
@@ -101,11 +151,11 @@ async function handleLogin(e) {
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
         if (error) throw error;
     } catch (error) {
-        errorDiv.innerText = error.message;
+        errorDiv.innerText = "Credenziali non valide o errore di rete.";
         errorDiv.classList.remove('d-none');
     } finally {
         loginBtn.disabled = false;
-        loginBtn.innerText = "Accedi";
+        loginBtn.innerText = "Accedi ora";
     }
 }
 
@@ -120,17 +170,32 @@ async function loadData() {
         const { data, error } = await supabaseClient
             .from('family_members')
             .select('*')
-            .order('name', { ascending: true }); // Order by name for the list view
+            .order('name', { ascending: true });
 
         if (error) throw error;
         
         allMembersFlat = data;
         familyData = buildTreeHierarchy(data);
+        
+        updateDashboardStats();
         renderTreeEditor();
         renderListView();
     } catch (error) {
         console.error("Could not fetch family data:", error);
+        showToast("Errore nel caricamento dei dati", "danger");
     }
+}
+
+function updateDashboardStats() {
+    const total = allMembersFlat.length;
+    const bloodline = allMembersFlat.filter(m => !m.spouse_id).length;
+    const spouses = allMembersFlat.filter(m => m.spouse_id).length;
+    const bios = allMembersFlat.filter(m => m.bio && m.bio.trim().length > 0).length;
+
+    document.getElementById('stat-total').innerText = total;
+    document.getElementById('stat-bloodline').innerText = bloodline;
+    document.getElementById('stat-spouses').innerText = spouses;
+    document.getElementById('stat-bios').innerText = bios;
 }
 
 function renderListView(filter = "") {
@@ -143,27 +208,35 @@ function renderListView(filter = "") {
     );
 
     if (filtered.length === 0) {
-        listBody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">Nessun membro trovato.</td></tr>';
+        listBody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">Nessun membro trovato.</td></tr>';
         return;
     }
 
     listBody.innerHTML = filtered.map(m => `
         <tr>
-            <td>
-                <div class="fw-bold">${m.name}</div>
+            <td class="px-4">
+                <div class="d-flex align-items-center">
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" style="width: 35px; height: 35px;">
+                        ${m.spouse_id ? '⚭' : '👤'}
+                    </div>
+                    <div>
+                        <div class="fw-bold">${m.name}</div>
+                        <div class="extra-small text-muted">${m.title || (m.spouse_id ? 'Partner' : 'Membro Linea Sangue')}</div>
+                    </div>
+                </div>
             </td>
             <td>
                 <span class="small text-muted">${m.contact || '-'}</span>
             </td>
             <td>
-                <span class="badge ${m.spouse_id ? 'bg-warning text-dark' : 'bg-primary'}">
-                    ${m.spouse_id ? (m.title || 'Coniuge') : 'Linea di sangue'}
+                <span class="badge ${m.spouse_id ? 'bg-soft-orange' : 'bg-soft-blue'} rounded-pill px-3">
+                    ${m.spouse_id ? 'Coniuge' : 'Linea Sangue'}
                 </span>
             </td>
-            <td class="text-end">
+            <td class="px-4 text-end">
                 <div class="d-flex justify-content-end gap-2">
-                    <button class="btn btn-sm btn-outline-primary" onclick="editPerson('${m.id}', '${m.spouse_id ? 'spouse' : 'bloodline'}')">Modifica</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteNode('${m.id}')">Elimina</button>
+                    <button class="action-btn btn-edit" onclick="editPerson('${m.id}', '${m.spouse_id ? 'spouse' : 'bloodline'}')" title="Modifica"><i class="bi bi-pencil"></i></button>
+                    <button class="action-btn btn-delete" onclick="deleteNode('${m.id}')" title="Elimina"><i class="bi bi-trash"></i></button>
                 </div>
             </td>
         </tr>
@@ -200,49 +273,48 @@ function transformAdminData(node) {
 
     const bloodlineActions = `
         <div class="admin-actions">
-            <button class="action-btn btn-edit" onclick="editPerson('${node.id}', 'bloodline')" title="Modifica">✎</button>
-            ${!node.spouse_data ? `<button class="action-btn btn-spouse" onclick="addSpouse('${node.id}')" title="Aggiungi Coniuge">⚭</button>` : ''}
-            <button class="action-btn btn-delete" onclick="deleteNode('${node.id}')" title="Elimina">×</button>
+            <button class="action-btn btn-edit" onclick="editPerson('${node.id}', 'bloodline')" title="Modifica"><i class="bi bi-pencil"></i></button>
+            ${!node.spouse_data ? `<button class="action-btn btn-spouse" onclick="addSpouse('${node.id}')" title="Aggiungi Partner"><i class="bi bi-plus-circle"></i></button>` : ''}
+            <button class="action-btn btn-delete" onclick="deleteNode('${node.id}')" title="Elimina"><i class="bi bi-trash"></i></button>
         </div>
-    `;
-
-    const mainActions = `
-        <div class="admin-main-actions">
-            <button class="action-btn btn-child" style="width: 100%; max-width: 150px;" onclick="addChild('${node.id}')" title="Aggiungi Figlio">+ Aggiungi Figlio</button>
+        <div class="admin-actions mt-1" style="opacity: 1">
+            <button class="btn btn-child btn-sm w-100 py-0 extra-small" onclick="addChild('${node.id}')">+ Figlio</button>
         </div>
     `;
 
     if (node.spouse_data) {
         treantNode.HTMLclass = "node couple-node";
+        treantNode.width = 345;
+        treantNode.height = 140;
         treantNode.innerHTML = `
             <div class="person-container">
-                <div class="person bloodline-person admin-person-card">
-                    <p class="node-name"><span class="node-icon">👤</span>${node.name}</p>
+                <div class="person bloodline-person admin-person-card" data-name="${node.name.toLowerCase()}">
+                    <p class="node-name">👤 ${node.name}</p>
                     <p class="node-contact">${node.contact || ''}</p>
                     ${bloodlineActions}
                 </div>
                 <div class="spouse-separator"></div>
-                <div class="person spouse-person admin-person-card">
-                    <p class="node-name"><span class="node-icon">⚭</span>${node.spouse_data.name}</p>
-                    ${node.spouse_data.title ? `<p class="node-title">${node.spouse_data.title}</p>` : ''}
+                <div class="person spouse-person admin-person-card" data-name="${node.spouse_data.name.toLowerCase()}">
+                    <p class="node-name">⚭ ${node.spouse_data.name}</p>
+                    ${node.spouse_data.title ? `<p class="node-title small italic text-muted">${node.spouse_data.title}</p>` : ''}
                     <p class="node-contact">${node.spouse_data.contact || ''}</p>
                     <div class="admin-actions">
-                        <button class="action-btn btn-edit" onclick="editPerson('${node.spouse_data.id}', 'spouse')" title="Modifica">✎</button>
-                        <button class="action-btn btn-delete" onclick="deleteNode('${node.spouse_data.id}')" title="Elimina">×</button>
+                        <button class="action-btn btn-edit" onclick="editPerson('${node.spouse_data.id}', 'spouse')" title="Modifica"><i class="bi bi-pencil"></i></button>
+                        <button class="action-btn btn-delete" onclick="deleteNode('${node.spouse_data.id}')" title="Elimina"><i class="bi bi-trash"></i></button>
                     </div>
                 </div>
             </div>
-            ${mainActions}
         `;
     } else {
         treantNode.HTMLclass = "node single-node";
+        treantNode.width = 160;
+        treantNode.height = 140;
         treantNode.innerHTML = `
-            <div class="person single-person bloodline-person admin-person-card">
-                <p class="node-name"><span class="node-icon">👤</span>${node.name}</p>
+            <div class="person single-person bloodline-person admin-person-card" data-name="${node.name.toLowerCase()}">
+                <p class="node-name">👤 ${node.name}</p>
                 <p class="node-contact">${node.contact || ''}</p>
                 ${bloodlineActions}
             </div>
-            ${mainActions}
         `;
     }
 
@@ -251,14 +323,16 @@ function transformAdminData(node) {
 
 function renderTreeEditor() {
     const container = document.getElementById('tree-editor-container');
-    container.innerHTML = `
-        <div class="p-3 text-center border-bottom bg-light">
-            <button class="btn btn-primary" onclick="addRoot()">+ Nuovo Capostipite</button>
-        </div>
-    `;
+    container.innerHTML = '';
 
     if (!familyData || familyData.length === 0) {
-        container.innerHTML += `<div class="p-5 text-center text-muted">L'albero è vuoto.</div>`;
+        container.innerHTML = `
+            <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                <i class="bi bi-tree h1 mb-3 opacity-25"></i>
+                <p>L'albero è attualmente vuoto.</p>
+                <button class="btn btn-primary fw-bold px-4" onclick="addRoot()">+ Aggiungi il primo Capostipite</button>
+            </div>
+        `;
         return;
     }
     
@@ -266,6 +340,8 @@ function renderTreeEditor() {
     const subContainer = document.createElement('div');
     subContainer.id = subContainerId;
     subContainer.className = 'treant-instance';
+    subContainer.style.width = '100%';
+    subContainer.style.height = '100%';
     container.appendChild(subContainer);
 
     const virtualRoot = {
@@ -277,12 +353,12 @@ function renderTreeEditor() {
     const chart_config = {
         chart: {
             container: `#${subContainerId}`,
-            levelSeparation: 100,
-            siblingSeparation: 50,
-            subTeeSeparation: 50,
+            levelSeparation: 250,
+            siblingSeparation: 200,
+            subTeeSeparation: 200,
             rootOrientation: "NORTH",
-            nodeAlign: "BOTTOM",
-            padding: 35,
+            nodeAlign: "CENTER",
+            padding: 100,
             callback: {
                 onTreeLoaded: function(tree) {
                     const paths = document.querySelectorAll(`#${subContainerId} svg path`);
@@ -295,15 +371,12 @@ function renderTreeEditor() {
                         }
                     });
                     
-                    // Adatta la vista non appena l'albero è caricato
                     setTimeout(() => {
-                        if (panzoomInstance) {
-                            fitToScreen(subContainer);
-                        }
+                        if (panzoomInstance) fitToScreen(subContainer);
                     }, 100);
                 }
             },
-            connectors: { type: "step", style: { "stroke-width": 2, "stroke": "#ccc" } }
+            connectors: { type: "step", style: { "stroke-width": 2, "stroke": "#cbd5e0" } }
         },
         nodeStructure: virtualRoot
     };
@@ -323,7 +396,7 @@ function initPanzoom(element) {
         cursor: 'grab',
         touchAction: 'none',
         filter: (e) => {
-            return !e.target.classList.contains('action-btn');
+            return !e.target.closest('.action-btn') && !e.target.closest('.btn-child');
         }
     });
 
@@ -331,7 +404,6 @@ function initPanzoom(element) {
     document.getElementById('zoom-out').addEventListener('click', () => panzoomInstance.zoomOut({ animate: true }));
     document.getElementById('zoom-reset').addEventListener('click', () => fitToScreen(element));
 
-    // Support pinch zoom and double tap on mobile
     element.addEventListener('wheel', (event) => {
         if (!event.ctrlKey && !event.metaKey) return;
         event.preventDefault();
@@ -370,12 +442,14 @@ function fitToScreen(element) {
     const contentWidth = maxX - minX;
     const contentHeight = maxY - minY;
 
-    const padding = 40;
+    const padding = 80;
     const scaleX = (parentWidth - padding * 2) / contentWidth;
     const scaleY = (parentHeight - padding * 2) / contentHeight;
     
     let scale = Math.min(scaleX, scaleY);
-    scale = Math.min(Math.max(scale, 0.05), 1.2); 
+    // Imposta un limite minimo per la scala automatica (es. 0.5) per mantenere la leggibilità.
+    // Se l'albero è troppo grande, verrà centrato ma non rimpicciolito oltre questo limite.
+    scale = Math.min(Math.max(scale, 0.5), 1.2); 
 
     panzoomInstance.zoom(scale, { animate: true });
     
@@ -385,61 +459,38 @@ function fitToScreen(element) {
     panzoomInstance.pan(offsetX, offsetY, { animate: true });
 }
 
-let resizeTimer;
-let lastWidth = window.innerWidth;
-window.addEventListener('resize', function() {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function() {
-        const currentWidth = window.innerWidth;
-        // Solo se la larghezza cambia significativamente (evita trigger da scroll mobile che nasconde/mostra barra indirizzi)
-        if (Math.abs(currentWidth - lastWidth) > 50) {
-            lastWidth = currentWidth;
-            const adminContainer = document.getElementById('tree-editor-container');
-            if (adminContainer) {
-                adminContainer.innerHTML = '';
-                renderTreeEditor();
-            }
+function highlightInTree(query) {
+    const cards = document.querySelectorAll('.admin-person-card');
+    cards.forEach(card => {
+        if (query.length > 1 && card.getAttribute('data-name').includes(query)) {
+            card.style.borderColor = '#3498db';
+            card.style.boxShadow = '0 0 15px rgba(52, 152, 219, 0.5)';
+            card.style.transform = 'scale(1.05)';
         } else {
-            // Altrimenti adatta solo la vista esistente
-            const adminContainer = document.getElementById('tree-editor-container');
-            if (adminContainer) {
-                const subContainer = adminContainer.querySelector('.treant-instance');
-                if (subContainer) {
-                    fitToScreen(subContainer);
-                }
-            }
+            card.style.borderColor = '';
+            card.style.boxShadow = '';
+            card.style.transform = '';
         }
-    }, 250);
-});
+    });
+}
 
 function showToast(message, type = 'success') {
     const toastEl = document.getElementById('adminToast');
     const toastMsg = document.getElementById('toast-message');
-    
     if (!toastEl || !toastMsg) return;
     
     toastMsg.innerText = message;
-    
-    // Set color based on type
-    toastEl.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'text-white');
-    if (type === 'success') {
-        toastEl.classList.add('bg-success', 'text-white');
-    } else if (type === 'danger') {
-        toastEl.classList.add('bg-danger', 'text-white');
-    } else if (type === 'warning') {
-        toastEl.classList.add('bg-warning', 'text-dark');
-    }
-    
+    toastEl.className = `toast border-0 shadow-lg rounded-3 bg-${type === 'success' ? 'success' : 'danger'} text-white`;
     if (adminToast) adminToast.show();
 }
 
-// JSON Upload and Backup
+// JSON & Backup
 async function handleFileUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!confirm("ATTENZIONE: L'importazione sovrascriverà i dati attuali. Vuoi procedere con l'importazione del file JSON locale?")) {
-        e.target.value = ''; // Reset input
+    if (!confirm("ATTENZIONE: L'importazione sovrascriverà i dati attuali. Vuoi procedere?")) {
+        e.target.value = '';
         return;
     }
 
@@ -447,23 +498,17 @@ async function handleFileUpload(e) {
     reader.onload = async (event) => {
         try {
             const json = JSON.parse(event.target.result);
+            await createBackup(false);
             
-            // 1. Create automatic backup before massive change
-            await createBackup(false); // Silent backup
-
-            // 2. Clear current data (optional but recommended for fresh import)
-            if (confirm("Vuoi svuotare il database prima dell'importazione? (Consigliato per evitare duplicati)")) {
+            if (confirm("Vuoi svuotare il database prima dell'importazione?")) {
                 await supabaseClient.from('family_members').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             }
 
-            // 3. Insert new data
             await performImport(json);
-            
-            showToast("Importazione completata con successo!");
+            showToast("Importazione completata!");
             loadData();
         } catch (error) {
-            console.error(error);
-            showToast("Errore durante l'importazione: " + error.message, 'danger');
+            showToast("Errore durante l'importazione", 'danger');
         } finally {
             e.target.value = '';
         }
@@ -472,7 +517,6 @@ async function handleFileUpload(e) {
 }
 
 async function performImport(node, parentId = null) {
-    // This is a recursive import from the Treant-like JSON structure
     const { data: mainPerson, error: err1 } = await supabaseClient
         .from('family_members')
         .insert([{ name: node.text.name, contact: node.text.contact, parent_id: parentId }])
@@ -496,65 +540,43 @@ async function performImport(node, parentId = null) {
 
 async function createBackup(showConfirm = true) {
     try {
-        // Fetch all current data
         const { data, error } = await supabaseClient.from('family_members').select('*');
         if (error) throw error;
 
-        if (data.length === 0 && showConfirm) {
-            showToast("Nessun dato da salvare nel backup.", 'warning');
-            return;
-        }
-
-        // Prepare backup object
-        const backup = {
-            timestamp: new Date().toISOString(),
-            data: data
-        };
-
-        // Create a downloadable file for the user
+        const backup = { timestamp: new Date().toISOString(), data: data };
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `family_backup_${new Date().getTime()}.json`;
+        a.download = `oliose_backup_${new Date().getTime()}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        if (showConfirm) showToast("Backup creato e scaricato correttamente.");
+        if (showConfirm) showToast("Backup scaricato correttamente.");
     } catch (error) {
-        console.error("Errore backup:", error);
-        showToast("Errore durante la creazione del backup.", 'danger');
+        showToast("Errore durante il backup", 'danger');
     }
 }
 
-// CRUD Operations
+// CRUD
 window.addRoot = async function() {
     const { error } = await supabaseClient.from('family_members').insert([{ name: "Nuovo Capostipite" }]);
     if (error) showToast(error.message, 'danger');
-    else {
-        showToast("Nuovo capostipite aggiunto!");
-        loadData();
-    }
+    else { showToast("Capostipite aggiunto!"); loadData(); }
 }
 
 window.addChild = async function(parentId) {
     const { error } = await supabaseClient.from('family_members').insert([{ name: "Nuovo Figlio", parent_id: parentId }]);
     if (error) showToast(error.message, 'danger');
-    else {
-        showToast("Figlio aggiunto con successo!");
-        loadData();
-    }
+    else { showToast("Figlio aggiunto!"); loadData(); }
 }
 
 window.addSpouse = async function(partnerId) {
-    const { error } = await supabaseClient.from('family_members').insert([{ name: "Nuovo Coniuge", spouse_id: partnerId, title: "Moglie" }]);
+    const { error } = await supabaseClient.from('family_members').insert([{ name: "Nuovo Partner", spouse_id: partnerId, title: "Moglie" }]);
     if (error) showToast(error.message, 'danger');
-    else {
-        showToast("Coniuge aggiunto con successo!");
-        loadData();
-    }
+    else { showToast("Partner aggiunto!"); loadData(); }
 }
 
 window.editPerson = async function(id, type) {
@@ -585,10 +607,7 @@ async function saveModalData() {
     const bio = document.getElementById('input-bio').value;
     const title = document.getElementById('input-title').value;
     
-    if (!name.trim()) {
-        showToast("Il nome è obbligatorio.", 'warning');
-        return;
-    }
+    if (!name.trim()) { showToast("Il nome è obbligatorio.", 'warning'); return; }
 
     const saveBtn = document.getElementById('btn-save-modal');
     const originalText = saveBtn.innerText;
@@ -596,19 +615,16 @@ async function saveModalData() {
     saveBtn.disabled = true;
     
     const updates = { name, contact, bio };
-    if (document.getElementById('edit-type').value === 'spouse') {
-        updates.title = title;
-    }
+    if (document.getElementById('edit-type').value === 'spouse') updates.title = title;
     
     try {
         const { error } = await supabaseClient.from('family_members').update(updates).eq('id', id);
         if (error) throw error;
-        
         editModal.hide();
-        showToast("Dati salvati correttamente!");
+        showToast("Dati salvati!");
         loadData();
     } catch (error) {
-        showToast("Errore durante il salvataggio: " + error.message, 'danger');
+        showToast("Errore nel salvataggio", 'danger');
     } finally {
         saveBtn.innerText = originalText;
         saveBtn.disabled = false;
@@ -619,9 +635,6 @@ window.deleteNode = async function(id) {
     if (confirm("Sei sicuro? Se è un membro della linea di sangue, verrà eliminata anche tutta la discendenza.")) {
         const { error } = await supabaseClient.from('family_members').delete().eq('id', id);
         if (error) showToast(error.message, 'danger');
-        else {
-            showToast("Membro eliminato.");
-            loadData();
-        }
+        else { showToast("Membro eliminato."); loadData(); }
     }
 }
