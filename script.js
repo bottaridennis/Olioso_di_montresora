@@ -143,7 +143,7 @@ function transformData(node, currentLevel = 0, maxLevel = 10) {
 
     if (node.spouse) {
         treantNode.HTMLclass = "node couple-node";
-        treantNode.width = 380;
+        treantNode.width = 382; // 180 + 2 + 180 + some margin
         treantNode.height = 80;
         treantNode.data = { id: node.id }; // Added for Treant but we'll also add to innerHTML
         treantNode.innerHTML = `
@@ -232,10 +232,10 @@ async function initTree() {
         chart: {
             container: `#${subContainerId}`,
             levelSeparation: orientation === "NORTH" ? 150 : 200,
-            siblingSeparation: orientation === "NORTH" ? 80 : 60,
-            subTeeSeparation: 80,
+            siblingSeparation: orientation === "NORTH" ? 100 : 80,
+            subTeeSeparation: 100,
             rootOrientation: orientation,
-            nodeAlign: "CENTER",
+            nodeAlign: "BOTTOM",
             padding: 50,
             callback: {
                 onTreeLoaded: function(tree) {

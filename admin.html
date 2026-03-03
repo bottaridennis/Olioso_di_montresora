@@ -63,6 +63,64 @@
             z-index: 1000;
         }
 
+        /* Mobile Adjustments */
+        @media (max-width: 992px) {
+            #sidebar {
+                position: fixed;
+                left: calc(-1 * var(--sidebar-width));
+                height: 100vh;
+            }
+            #sidebar.active {
+                left: 0;
+            }
+            #main-content {
+                width: 100vw;
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .sidebar-overlay.active {
+                display: block;
+            }
+            .content-header {
+                padding: 10px 15px;
+            }
+            .stat-card {
+                padding: 15px;
+            }
+            .stat-icon {
+                width: 45px;
+                height: 45px;
+                font-size: 1.4rem;
+                margin-right: 12px;
+            }
+            #tree-search-input {
+                width: 150px !important;
+            }
+        }
+
+        .sidebar-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar-toggle {
+                display: block;
+            }
+        }
+
         .sidebar-header {
             padding: 25px 20px;
             background: #1a252f;
@@ -195,15 +253,19 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            flex-shrink: 0 !important;
         }
 
         .person-container {
             display: flex;
             align-items: flex-start;
+            flex-wrap: nowrap !important;
+            overflow: visible !important;
+            width: auto;
         }
 
         .couple-node {
-            width: 345px;
+            width: 340px; /* 160 + 20 + 160 */
             border: none !important;
             background: transparent !important;
             box-shadow: none !important;
@@ -214,6 +276,38 @@
             border: none !important;
             background: transparent !important;
             box-shadow: none !important;
+        }
+
+        /* Tree Editor Mobile adjustments */
+        @media (max-width: 992px) {
+            .admin-tree-container {
+                height: calc(100vh - 140px);
+            }
+            .admin-person-card {
+                width: 140px !important;
+                height: 125px !important;
+                padding: 8px;
+            }
+            .couple-node {
+                width: 300px; /* 140 + 20 + 140 */
+            }
+            .single-node {
+                width: 140px;
+            }
+            .node-name {
+                font-size: 0.85rem;
+            }
+            .node-contact {
+                font-size: 0.7rem;
+            }
+            .action-btn {
+                width: 26px;
+                height: 26px;
+                font-size: 12px;
+            }
+            .admin-actions {
+                opacity: 1; /* Always show actions on mobile as there's no hover */
+            }
         }
 
         .admin-person-card:hover {
@@ -256,10 +350,10 @@
         .action-btn:hover { transform: scale(1.15); }
 
         .spouse-separator {
-            width: 25px;
+            width: 20px;
             height: 2px;
             background: #dee2e6;
-            margin: 30px -5px 0;
+            margin: 30px 0 0;
             flex-shrink: 0;
         }
 
@@ -305,6 +399,46 @@
             border-color: var(--primary-color);
             box-shadow: none;
         }
+
+        /* List View Mobile */
+        @media (max-width: 768px) {
+            .table thead {
+                display: none;
+            }
+            .table, .table tbody, .table tr, .table td {
+                display: block;
+                width: 100%;
+            }
+            .table tr {
+                margin-bottom: 15px;
+                border: 1px solid #e9ecef;
+                border-radius: 10px;
+                background: white;
+                padding: 10px;
+            }
+            .table td {
+                text-align: left;
+                padding: 5px 10px;
+                border: none;
+            }
+            .table td:last-child {
+                border-top: 1px solid #f8f9fa;
+                margin-top: 5px;
+                padding-top: 10px;
+            }
+        }
+
+        /* Dashboard stacking */
+        @media (max-width: 768px) {
+            .stat-card {
+                margin-bottom: 0;
+            }
+            .content-body {
+                padding: 15px;
+            }
+        }
+
+        /* Utilities */
     </style>
 </head>
 <body>
@@ -334,11 +468,17 @@
 
     <!-- Admin Content -->
     <div id="admin-wrapper" class="d-none">
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <!-- Sidebar -->
         <aside id="sidebar">
-            <div class="sidebar-header">
-                <h5 class="mb-0 fw-bold">Olioso Admin</h5>
-                <p class="small opacity-50 mb-0">Management Console</p>
+            <div class="sidebar-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0 fw-bold">Olioso Admin</h5>
+                    <p class="small opacity-50 mb-0">Console</p>
+                </div>
+                <button class="btn btn-link text-white d-lg-none p-0" id="close-sidebar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
             </div>
             <div class="sidebar-menu">
                 <div class="menu-item active" data-target="dashboard-view">
@@ -372,7 +512,12 @@
         <!-- Main Content -->
         <main id="main-content">
             <header class="content-header">
-                <h4 id="view-title" class="mb-0 fw-bold">Dashboard</h4>
+                <div class="d-flex align-items-center">
+                    <button class="sidebar-toggle" id="sidebar-toggle">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h4 id="view-title" class="mb-0 fw-bold">Dashboard</h4>
+                </div>
                 <div class="d-flex align-items-center gap-3">
                     <div id="tree-search-wrapper" class="d-none">
                         <div class="input-group input-group-sm">

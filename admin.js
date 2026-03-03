@@ -84,10 +84,29 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Sidebar navigation
     const menuItems = document.querySelectorAll('.menu-item');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const closeSidebar = document.getElementById('close-sidebar');
+
+    function toggleSidebar() {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
+    if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+    if (overlay) overlay.addEventListener('click', toggleSidebar);
+
     menuItems.forEach(item => {
         item.addEventListener('click', function() {
             const target = this.getAttribute('data-target');
             if (!target) return; // Exit for external links
+
+            // Close sidebar on mobile after clicking
+            if (window.innerWidth <= 992) {
+                toggleSidebar();
+            }
 
             // Update active state
             menuItems.forEach(mi => mi.classList.remove('active'));
@@ -267,6 +286,12 @@ function buildTreeHierarchy(members) {
 function transformAdminData(node) {
     if (!node) return null;
 
+    const isMobile = window.innerWidth <= 992;
+    const nodeWidth = isMobile ? 140 : 160;
+    const nodeHeight = isMobile ? 125 : 140;
+    const separatorWidth = 20;
+    const coupleWidth = (nodeWidth * 2) + separatorWidth;
+
     let treantNode = {
         children: node.children ? node.children.map(transformAdminData) : []
     };
@@ -284,8 +309,8 @@ function transformAdminData(node) {
 
     if (node.spouse_data) {
         treantNode.HTMLclass = "node couple-node";
-        treantNode.width = 345;
-        treantNode.height = 140;
+        treantNode.width = coupleWidth;
+        treantNode.height = nodeHeight;
         treantNode.innerHTML = `
             <div class="person-container">
                 <div class="person bloodline-person admin-person-card" data-name="${node.name.toLowerCase()}">
@@ -307,8 +332,8 @@ function transformAdminData(node) {
         `;
     } else {
         treantNode.HTMLclass = "node single-node";
-        treantNode.width = 160;
-        treantNode.height = 140;
+        treantNode.width = nodeWidth;
+        treantNode.height = nodeHeight;
         treantNode.innerHTML = `
             <div class="person single-person bloodline-person admin-person-card" data-name="${node.name.toLowerCase()}">
                 <p class="node-name">👤 ${node.name}</p>
@@ -350,15 +375,16 @@ function renderTreeEditor() {
         text: { name: 'Virtual Root' }
     };
 
+    const isMobile = window.innerWidth <= 992;
     const chart_config = {
         chart: {
             container: `#${subContainerId}`,
-            levelSeparation: 250,
-            siblingSeparation: 200,
-            subTeeSeparation: 200,
+            levelSeparation: isMobile ? 250 : 300,
+            siblingSeparation: isMobile ? 450 : 300,
+            subTeeSeparation: isMobile ? 500 : 300,
             rootOrientation: "NORTH",
-            nodeAlign: "CENTER",
-            padding: 100,
+            nodeAlign: "BOTTOM",
+            padding: isMobile ? 60 : 100,
             callback: {
                 onTreeLoaded: function(tree) {
                     const paths = document.querySelectorAll(`#${subContainerId} svg path`);
