@@ -193,6 +193,15 @@ main {
     #search-input {
         font-size: 0.9rem;
     }
+    .info-panel {
+        display: none; /* Hide on mobile by default */
+    }
+}
+
+@media (min-width: 768px) {
+    .info-panel.active {
+        display: block;
+    }
 }
 
 .treant-container::-webkit-scrollbar {

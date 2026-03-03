@@ -18,7 +18,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 container.innerHTML = '';
                 initTree();
             }
+            // Listen for legend toggle
+    const legendToggle = document.getElementById('toggle-legend');
+    const infoPanel = document.getElementById('info-panel');
+    if (legendToggle && infoPanel) {
+        legendToggle.addEventListener('click', () => {
+            infoPanel.classList.toggle('d-none');
+            infoPanel.classList.toggle('d-md-block');
         });
+    }
+});
     }
 
     // Listen for generation filter
