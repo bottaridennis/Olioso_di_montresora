@@ -289,7 +289,7 @@ function transformAdminData(node) {
     const isMobile = window.innerWidth <= 992;
     const nodeWidth = isMobile ? 140 : 160;
     const nodeHeight = isMobile ? 125 : 140;
-    const separatorWidth = 20;
+    const separatorWidth = 30;
     const coupleWidth = (nodeWidth * 2) + separatorWidth;
 
     let treantNode = {
@@ -318,7 +318,6 @@ function transformAdminData(node) {
                     <p class="node-contact">${node.contact || ''}</p>
                     ${bloodlineActions}
                 </div>
-                <div class="spouse-separator"></div>
                 <div class="person spouse-person admin-person-card" data-name="${node.spouse_data.name.toLowerCase()}">
                     <p class="node-name">⚭ ${node.spouse_data.name}</p>
                     ${node.spouse_data.title ? `<p class="node-title small italic text-muted">${node.spouse_data.title}</p>` : ''}
@@ -369,11 +368,13 @@ function renderTreeEditor() {
     subContainer.style.height = '100%';
     container.appendChild(subContainer);
 
-    const virtualRoot = {
+    const transformedData = familyData.map(transformAdminData);
+
+    const nodeStructure = transformedData.length > 1 ? {
         HTMLclass: 'virtual-root',
-        children: familyData.map(transformAdminData),
+        children: transformedData,
         text: { name: 'Virtual Root' }
-    };
+    } : (transformedData[0] || null);
 
     const isMobile = window.innerWidth <= 992;
     const chart_config = {
@@ -391,9 +392,13 @@ function renderTreeEditor() {
                     paths.forEach(path => {
                         const d = path.getAttribute('d');
                         if (d) {
-                            const parts = d.split(/[ ,MLZ]/);
-                            const y = parseFloat(parts[2]);
-                            if (y < 50) path.style.display = 'none';
+                            // Estraggo il punto di partenza (y) per nascondere i rami della radice virtuale
+                            const match = d.match(/^M\s*([\d.-]+)[\s,]+([\d.-]+)/);
+                            if (match) {
+                                const y1 = parseFloat(match[2]);
+                                // Hide connectors only if a virtual root is being used (more than one root node)
+                                if (transformedData.length > 1 && y1 < 50) path.style.display = 'none';
+                            }
                         }
                     });
                     
@@ -404,7 +409,7 @@ function renderTreeEditor() {
             },
             connectors: { type: "step", style: { "stroke-width": 2, "stroke": "#cbd5e0" } }
         },
-        nodeStructure: virtualRoot
+        nodeStructure: nodeStructure
     };
     new Treant(chart_config);
     initPanzoom(subContainer);
@@ -530,10 +535,23 @@ async function handleFileUpload(e) {
                 await supabaseClient.from('family_members').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             }
 
-            await performImport(json);
+            // Se è un backup flat (formato creato da createBackup)
+            if (json.data && Array.isArray(json.data)) {
+                await performFlatImport(json.data);
+            } else {
+                // Altrimenti è il formato gerarchico (formato family-data.json)
+                const dataToImport = Array.isArray(json) ? json : [json];
+                for (const node of dataToImport) {
+                    if (node && typeof node === 'object') { // Assicura che il nodo sia valido
+                        await performImport(node);
+                    }
+                }
+            }
+            
             showToast("Importazione completata!");
             loadData();
         } catch (error) {
+            console.error("Errore importazione:", error);
             showToast("Errore durante l'importazione", 'danger');
         } finally {
             e.target.value = '';
@@ -542,10 +560,36 @@ async function handleFileUpload(e) {
     reader.readAsText(file);
 }
 
+async function performFlatImport(data) {
+    // Per un'importazione flat corretta con foreign keys, dovremmo mappare i vecchi ID ai nuovi
+    // ma se svuotiamo il DB e gli ID sono UUID, possiamo provare a inserirli direttamente
+    // se il backup contiene già gli ID originali.
+    
+    // Rimuoviamo created_at per evitare conflitti o lasciamo che Supabase lo gestisca
+    const cleanData = data.map(({ created_at, ...rest }) => rest);
+    
+    const { error } = await supabaseClient
+        .from('family_members')
+        .insert(cleanData);
+    
+    if (error) throw error;
+}
+
 async function performImport(node, parentId = null) {
+    // Controllo di sicurezza: esce se il nodo non è valido o non ha la proprietà 'text'
+    if (!node || typeof node !== 'object' || !node.text || typeof node.text.name !== 'string') {
+        console.warn("Skipping invalid node:", node);
+        return;
+    }
     const { data: mainPerson, error: err1 } = await supabaseClient
         .from('family_members')
-        .insert([{ name: node.text.name, contact: node.text.contact, parent_id: parentId }])
+        .insert([{ 
+            name: node.text.name, 
+            contact: node.text.contact, 
+            parent_id: parentId,
+            bio: node.text.bio || '',
+            title: node.text.title || ''
+        }])
         .select().single();
     
     if (err1) throw err1;
@@ -553,13 +597,23 @@ async function performImport(node, parentId = null) {
     if (node.spouse) {
         const { error: err2 } = await supabaseClient
             .from('family_members')
-            .insert([{ name: node.spouse.name, contact: node.spouse.contact, title: node.spouse.title, spouse_id: mainPerson.id }]);
+            .insert([{ 
+                name: node.spouse.name, 
+                contact: node.spouse.contact, 
+                title: node.spouse.title, 
+                spouse_id: mainPerson.id,
+                bio: node.spouse.bio || ''
+            }]);
         if (err2) throw err2;
     }
 
-    if (node.children) {
+    // Se ci sono figli, itera e importa ricorsivamente
+    if (node.children && node.children.length > 0) {
         for (const child of node.children) {
-            await performImport(child, mainPerson.id);
+            // Assicura che il figlio sia un oggetto valido prima di procedere
+            if (child && typeof child === 'object') {
+                await performImport(child, mainPerson.id);
+            }
         }
     }
 }

@@ -1,84 +1,126 @@
-{
-    "text": {
-        "name": "Giovanni Rossi",
-        "contact": "1920 - 1995"
-    },
-    "spouse": {
-        "name": "Luisa Verdi",
-        "title": "Moglie",
-        "contact": "1922 - 1998"
-    },
+[
+  {
+    "text": { "name": "Giuseppe Olioso", "contact": "1930-2010", "bio": "Capostipite del ramo principale." },
+    "spouse": { "name": "Laura Conti", "contact": "1932-2012", "title": "Moglie" },
     "children": [
-        {
-            "text": {
-                "name": "Maria Rossi",
-                "contact": "1945 - Presente"
-            },
-            "spouse": {
-                "name": "Giuseppe Bianchi",
-                "title": "Marito",
-                "contact": "1942 - 2015"
-            },
+      {
+        "text": { "name": "Paolo Olioso" },
+        "spouse": { "name": "Elena Ricci", "title": "Moglie" },
+        "children": [
+          {
+            "text": { "name": "Matteo Olioso" },
+            "spouse": { "name": "Valentina Moretti", "title": "Moglie" },
             "children": [
-                {
-                    "text": {
-                        "name": "Luca Bianchi",
-                        "contact": "1970 - Presente"
-                    },
-                    "spouse": {
-                        "name": "Elena Neri",
-                        "title": "Moglie",
-                        "contact": "1972 - Presente"
-                    }
-                },
-                {
-                    "text": {
-                        "name": "Elena Bianchi",
-                        "contact": "1972 - Presente"
-                    }
-                }
+              { "text": { "name": "Leonardo Olioso" } }
             ]
-        },
-        {
-            "text": {
-                "name": "Pietro Rossi",
-                "contact": "1948 - 2010"
-            },
-            "spouse": {
-                "name": "Carla Neri",
-                "title": "Moglie",
-                "contact": "1950 - Presente"
-            },
+          },
+          { "text": { "name": "Luca Olioso" } }
+        ]
+      },
+      {
+        "text": { "name": "Andrea Olioso" },
+        "spouse": { "name": "Francesca Gallo", "title": "Moglie" },
+        "children": [
+          { "text": { "name": "Sofia Olioso" } },
+          {
+            "text": { "name": "Gabriele Olioso" },
+            "spouse": { "name": "Alice Bruno", "title": "Moglie" },
             "children": [
-                {
-                    "text": {
-                        "name": "Marco Rossi",
-                        "contact": "1975 - Presente"
-                    },
-                    "children": [
-                        {
-                            "text": {
-                                "name": "Sofia Rossi",
-                                "contact": "2005 - Presente"
-                            }
-                        }
-                    ]
-                }
+              { "text": { "name": "Aurora Olioso" } }
             ]
-        },
-        {
-            "text": {
-                "name": "Anna Rossi",
-                "contact": "1952 - Presente"
-            },
-            "children": [
-                {
-                    "text": {
-                        "name": "Giulia Verdi",
-                        "contact": "1980 - Presente"
-                    }
-                }
-            ]
-        }
+          }
+        ]
+      },
+      { "text": { "name": "Maria Olioso" } }
     ]
-}
+  },
+  {
+    "text": { "name": "Antonio Montresor", "bio": "Ramo dei Montresor." },
+    "spouse": { "name": "Giovanna Lombardi", "title": "Moglie" },
+    "children": [
+      {
+        "text": { "name": "Roberto Montresor" },
+        "spouse": { "name": "Barbara Barbieri", "title": "Moglie" },
+        "children": [
+          { "text": { "name": "Riccardo Montresor" } },
+          { "text": { "name": "Elisa Montresor" } }
+        ]
+      },
+      {
+        "text": { "name": "Cristina Montresor" },
+        "spouse": { "name": "Daniele Fontana", "title": "Marito" },
+        "children": [
+          {
+            "text": { "name": "Mattia Fontana" },
+            "spouse": { "name": "Giorgia Villa", "title": "Moglie" },
+            "children": [
+              { "text": { "name": "Tommaso Fontana" } }
+            ]
+          }
+        ]
+      },
+      { "text": { "name": "Stefano Montresor" } },
+      {
+        "text": { "name": "Simona Montresor" },
+        "spouse": { "name": "Massimiliano Greco", "title": "Marito" },
+        "children": [
+          { "text": { "name": "Alessia Greco" } },
+          { "text": { "name": "Lorenzo Greco" } },
+          { "text": { "name": "Marco Greco" } }
+        ]
+      }
+    ]
+  },
+  {
+    "text": { "name": "Luigi Olioso", "bio": "Altro ramo degli Olioso." },
+    "spouse": { "name": "Angela Marino", "title": "Moglie" },
+    "children": [
+      {
+        "text": { "name": "Davide Olioso" },
+        "spouse": { "name": "Monica Ferri", "title": "Moglie" },
+        "children": [
+          {
+            "text": { "name": "Francesco Olioso" },
+            "spouse": { "name": "Beatrice Rinaldi", "title": "Moglie" },
+            "children": [
+              { "text": { "name": "Ginevra Olioso" } },
+              { "text": { "name": "Edoardo Olioso" } }
+            ]
+          },
+          { "text": { "name": "Giacomo Olioso" } }
+        ]
+      },
+      {
+        "text": { "name": "Chiara Olioso" },
+        "spouse": { "name": "Alberto Santoro", "title": "Marito" },
+        "children": [
+          { "text": { "name": "Viola Santoro" } },
+          { "text": { "name": "Pietro Santoro" } }
+        ]
+      }
+    ]
+  },
+  {
+    "text": { "name": "Carlo Olioso" },
+    "spouse": { "name": "Isabella De Luca", "title": "Moglie" },
+    "children": [
+      {
+        "text": { "name": "Fabio Olioso" },
+        "spouse": { "name": "Patrizia Marchetti", "title": "Moglie" },
+        "children": [
+          { "text": { "name": "Christian Olioso" } },
+          { "text": { "name": "Nicole Olioso" } }
+        ]
+      },
+      { "text": { "name": "Serena Olioso" } },
+      {
+        "text": { "name": "Marco Olioso" },
+        "spouse": { "name": "Veronica Coppola", "title": "Moglie" },
+        "children": [
+          { "text": { "name": "Samuele Olioso" } },
+          { "text": { "name": "Emma Olioso" } }
+        ]
+      }
+    ]
+  }
+]

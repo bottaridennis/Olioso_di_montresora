@@ -152,16 +152,15 @@ function transformData(node, currentLevel = 0, maxLevel = 10) {
 
     if (node.spouse) {
         treantNode.HTMLclass = "node couple-node";
-        treantNode.width = 382; // 180 + 2 + 180 + some margin
+        treantNode.width = 390; // 180 + 30 + 180
         treantNode.height = 80;
-        treantNode.data = { id: node.id }; // Added for Treant but we'll also add to innerHTML
+        treantNode.data = { id: node.id };
         treantNode.innerHTML = `
-            <div class="person-container" data-id="${node.id}" onclick="showMemberDetails('${node.id}')">
-                <div class="person bloodline-person">
+            <div class="person-container" data-id="${node.id}">
+                <div class="person bloodline-person" onclick="showMemberDetails('${node.id}')">
                     <p class="node-name"><span class="node-icon">👤</span>${node.name}</p>
                     <p class="node-contact">${node.contact || ''}</p>
                 </div>
-                <div class="spouse-separator"></div>
                 <div class="person spouse-person" data-id="${node.spouse_id || ''}" onclick="event.stopPropagation(); showMemberDetails('${node.spouse_id || ''}')">
                     <p class="node-name"><span class="node-icon">⚭</span>${node.spouse.name}</p>
                     ${node.spouse.title ? `<p class="node-title">${node.spouse.title}</p>` : ''}
@@ -254,14 +253,18 @@ async function initTree() {
                     paths.forEach(path => {
                         const d = path.getAttribute('d');
                         if (d) {
-                            const parts = d.split(/[ ,MLZ]/);
-                            if (orientation === "NORTH") {
-                                const y = parseFloat(parts[2]);
-                                if (y < 50) path.style.display = 'none';
-                            } else {
-                                // Orizzontale (WEST): il punto di partenza è X
-                                const x = parseFloat(parts[1]);
-                                if (x < 50) path.style.display = 'none';
+                            // Estraggo le coordinate del punto di partenza (M x y)
+                            const match = d.match(/^M\s*([\d.-]+)[\s,]+([\d.-]+)/);
+                            if (match) {
+                                const x1 = parseFloat(match[1]);
+                                const y1 = parseFloat(match[2]);
+                                
+                                if (orientation === "NORTH") {
+                                    if (y1 < 50) path.style.display = 'none';
+                                } else {
+                                    // WEST orientation: starting point is X
+                                    if (x1 < 50) path.style.display = 'none';
+                                }
                             }
                         }
                     });

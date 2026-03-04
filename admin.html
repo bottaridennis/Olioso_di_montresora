@@ -249,23 +249,48 @@
             transition: all 0.3s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             width: 160px;
-            height: 140px; /* Force height to match Treant config */
+            min-height: 140px; /* Force minimum height to match Treant config */
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             flex-shrink: 0 !important;
+            position: relative;
+            z-index: 2;
         }
 
         .person-container {
             display: flex;
-            align-items: flex-start;
+            align-items: stretch; /* Garantisce la stessa altezza per entrambi i box */
             flex-wrap: nowrap !important;
             overflow: visible !important;
             width: auto;
+            gap: 30px; /* Spazio tra i box */
+            position: relative;
+        }
+
+        /* Linea di unione tra i box dei coniugi */
+        .person-container::after {
+            content: "";
+            position: absolute;
+            top: 50%; /* Centrata verticalmente */
+            transform: translateY(-50%);
+            left: 160px;
+            width: 30px;
+            height: 2px;
+            background: #cbd5e0;
+            z-index: 0;
+        }
+
+        @media (max-width: 992px) {
+            .person-container::after {
+                left: 140px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
         }
 
         .couple-node {
-            width: 340px; /* 160 + 20 + 160 */
+            width: 350px; /* 160 + 30 + 160 */
             border: none !important;
             background: transparent !important;
             box-shadow: none !important;
@@ -285,14 +310,17 @@
             }
             .admin-person-card {
                 width: 140px !important;
-                height: 125px !important;
+                min-height: 125px !important;
                 padding: 8px;
             }
             .couple-node {
-                width: 300px; /* 140 + 20 + 140 */
+                width: 310px; /* 140 + 30 + 140 */
             }
             .single-node {
                 width: 140px;
+            }
+            .person-container {
+                gap: 30px;
             }
             .node-name {
                 font-size: 0.85rem;
@@ -358,6 +386,14 @@
         }
 
         .virtual-root { display: none !important; }
+
+        /* Rimozione padding e bordi per i nodi admin così i rami sono collegati correttamente */
+        .node {
+            padding: 0 !important;
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
 
         /* Login */
         #login-screen {
