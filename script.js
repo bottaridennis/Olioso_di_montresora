@@ -158,11 +158,11 @@ function transformData(node, currentLevel = 0, maxLevel = 10) {
         treantNode.innerHTML = `
             <div class="person-container" data-id="${node.id}">
                 <div class="person bloodline-person" onclick="showMemberDetails('${node.id}')">
-                    <p class="node-name"><span class="node-icon">👤</span>${node.name}</p>
+                    <p class="node-name"><i class="bi bi-person-fill text-primary me-2"></i>${node.name}</p>
                     <p class="node-contact">${node.contact || ''}</p>
                 </div>
                 <div class="person spouse-person" data-id="${node.spouse_id || ''}" onclick="event.stopPropagation(); showMemberDetails('${node.spouse_id || ''}')">
-                    <p class="node-name"><span class="node-icon">⚭</span>${node.spouse.name}</p>
+                    <p class="node-name"><i class="bi bi-heart-fill text-warning me-2"></i>${node.spouse.name}</p>
                     ${node.spouse.title ? `<p class="node-title">${node.spouse.title}</p>` : ''}
                     <p class="node-contact">${node.spouse.contact || ''}</p>
                 </div>
@@ -175,7 +175,7 @@ function transformData(node, currentLevel = 0, maxLevel = 10) {
         treantNode.data = { id: node.id };
         treantNode.innerHTML = `
             <div class="person single-person bloodline-person" data-id="${node.id}" onclick="showMemberDetails('${node.id}')">
-                <p class="node-name"><span class="node-icon">👤</span>${node.name}</p>
+                <p class="node-name"><i class="bi bi-person-fill text-primary me-2"></i>${node.name}</p>
                 <p class="node-contact">${node.contact || ''}</p>
             </div>
         `;
@@ -195,7 +195,7 @@ function showMemberDetails(id) {
     
     const extraInfo = document.getElementById('modal-extra-info');
     if (member.title) {
-        extraInfo.innerHTML = `<strong>Ruolo:</strong> ${member.title}`;
+        extraInfo.innerHTML = `<i class="bi bi-tag-fill me-2 text-primary"></i> <strong>Ruolo:</strong> ${member.title}`;
         extraInfo.classList.remove('d-none');
     } else {
         extraInfo.classList.add('d-none');
@@ -239,12 +239,12 @@ async function initTree() {
     const chart_config = {
         chart: {
             container: `#${subContainerId}`,
-            levelSeparation: orientation === "NORTH" ? 150 : 200,
-            siblingSeparation: orientation === "NORTH" ? 100 : 80,
-            subTeeSeparation: 100,
+            levelSeparation: orientation === "NORTH" ? 200 : 250,
+            siblingSeparation: orientation === "NORTH" ? 250 : 200,
+            subTeeSeparation: 300,
             rootOrientation: orientation,
             nodeAlign: "BOTTOM",
-            padding: 50,
+            padding: 80,
             callback: {
                 onTreeLoaded: function(tree) {
                     const paths = document.querySelectorAll(`#${subContainerId} svg path`);
@@ -424,7 +424,12 @@ function initPanzoom(element) {
 
     document.getElementById('zoom-in').addEventListener('click', () => panzoomInstance.zoomIn({ animate: true }));
     document.getElementById('zoom-out').addEventListener('click', () => panzoomInstance.zoomOut({ animate: true }));
-    document.getElementById('zoom-reset').addEventListener('click', () => fitToScreen(element));
+    
+    const resetBtn = document.getElementById('zoom-reset');
+    if (resetBtn) resetBtn.addEventListener('click', () => fitToScreen(element));
+    
+    const resetHeaderBtn = document.getElementById('zoom-reset-header');
+    if (resetHeaderBtn) resetHeaderBtn.addEventListener('click', () => fitToScreen(element));
     
     const exportBtn = document.getElementById('export-image');
     if (exportBtn) {

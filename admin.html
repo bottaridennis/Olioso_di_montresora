@@ -242,29 +242,67 @@
         }
 
         .admin-person-card {
-            border: 1px solid #e9ecef;
-            border-radius: 12px;
-            padding: 12px;
-            background: #fff;
-            transition: all 0.3s;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            width: 160px;
-            min-height: 140px; /* Force minimum height to match Treant config */
+            flex: 1;
+            padding: 16px; /* Uguale a style.css */
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            flex-shrink: 0 !important;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
             position: relative;
             z-index: 2;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 140px; /* Ridotto per essere più simile, ma con spazio per bottoni */
+            width: 180px;
+        }
+
+        .admin-person-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+            border-color: #3b82f6;
+        }
+
+        .bloodline-person {
+            border-left: 4px solid #3b82f6 !important;
+            background: linear-gradient(to bottom right, #ffffff, #f0f7ff) !important;
+        }
+
+        .spouse-person {
+            border-left: 4px solid #f59e0b !important;
+            background: linear-gradient(to bottom right, #ffffff, #fffbeb) !important;
+        }
+
+        .node-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+        }
+
+        .node-contact {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .node-title {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            font-style: italic;
+            margin-top: 0;
         }
 
         .person-container {
             display: flex;
-            align-items: stretch; /* Garantisce la stessa altezza per entrambi i box */
+            align-items: stretch;
             flex-wrap: nowrap !important;
             overflow: visible !important;
             width: auto;
-            gap: 30px; /* Spazio tra i box */
+            gap: 30px; /* Uguale a style.css */
             position: relative;
         }
 
@@ -272,13 +310,13 @@
         .person-container::after {
             content: "";
             position: absolute;
-            top: 50%; /* Centrata verticalmente */
+            top: 50%;
             transform: translateY(-50%);
-            left: 160px;
+            left: 180px;
             width: 30px;
             height: 2px;
-            background: #cbd5e0;
-            z-index: 0;
+            background: #adb5bd; /* Uguale a style.css */
+            z-index: 1;
         }
 
         @media (max-width: 992px) {
@@ -286,18 +324,19 @@
                 left: 140px;
                 top: 50%;
                 transform: translateY(-50%);
+                width: 30px;
             }
         }
 
         .couple-node {
-            width: 350px; /* 160 + 30 + 160 */
+            width: 390px; /* 180 + 30 + 180 */
             border: none !important;
             background: transparent !important;
             box-shadow: none !important;
         }
 
         .single-node {
-            width: 160px;
+            width: 180px;
             border: none !important;
             background: transparent !important;
             box-shadow: none !important;
@@ -310,8 +349,8 @@
             }
             .admin-person-card {
                 width: 140px !important;
-                min-height: 125px !important;
-                padding: 8px;
+                min-height: 120px !important;
+                padding: 10px;
             }
             .couple-node {
                 width: 310px; /* 140 + 30 + 140 */
@@ -319,63 +358,79 @@
             .single-node {
                 width: 140px;
             }
-            .person-container {
-                gap: 30px;
-            }
             .node-name {
-                font-size: 0.85rem;
-            }
-            .node-contact {
-                font-size: 0.7rem;
-            }
-            .action-btn {
-                width: 26px;
-                height: 26px;
-                font-size: 12px;
-            }
-            .admin-actions {
-                opacity: 1; /* Always show actions on mobile as there's no hover */
+                font-size: 0.9rem;
             }
         }
 
-        .admin-person-card:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-            z-index: 100;
+        .admin-actions-container {
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            opacity: 0.2; /* Quasi invisibili di base */
+            transition: opacity 0.3s;
         }
-
-        .node-name { font-weight: 600; font-size: 1rem; margin-bottom: 2px; }
-        .node-contact { font-size: 0.75rem; color: var(--text-muted); }
+        
+        .admin-person-card:hover .admin-actions-container {
+            opacity: 1;
+        }
 
         .admin-actions {
             display: flex;
             justify-content: center;
-            gap: 6px;
-            margin-top: 10px;
-            opacity: 0.3;
-            transition: 0.3s;
+            gap: 8px;
         }
         
-        .admin-person-card:hover .admin-actions { opacity: 1; }
-        
+        .admin-actions-bottom {
+            display: flex;
+            justify-content: center;
+        }
+
         .action-btn {
-            width: 30px;
-            height: 30px;
-            font-size: 14px;
-            border-radius: 6px;
+            width: 28px;
+            height: 28px;
+            font-size: 13px;
+            border-radius: 8px;
             border: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: 0.2s;
+            transition: all 0.2s;
+            background: #f8f9fa;
+            color: #64748b;
         }
 
-        .btn-edit { background: #f0f4f8; color: #3498db; }
-        .btn-child { background: #eafaf1; color: #2ecc71; }
-        .btn-spouse { background: #fef5e7; color: #f39c12; }
-        .btn-delete { background: #fdedec; color: #e74c3c; }
-        .action-btn:hover { transform: scale(1.15); }
+        .action-btn:hover {
+            transform: scale(1.15);
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn-edit:hover { color: #3b82f6; }
+        .btn-spouse:hover { color: #f59e0b; }
+        .btn-delete:hover { color: #ef4444; }
+
+        .btn-child {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-radius: 6px;
+            padding: 4px 0;
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #dcfce7;
+            transition: all 0.2s;
+        }
+
+        .btn-child:hover {
+            background: #16a34a;
+            color: #ffffff;
+            border-color: #16a34a;
+        }
 
         .spouse-separator {
             width: 20px;
@@ -580,7 +635,7 @@
                         </div>
                         <div class="col-md-3">
                             <div class="stat-card">
-                                <div class="stat-icon bg-soft-green"><i class="bi bi-dna"></i></div>
+                                <div class="stat-icon bg-soft-green"><i class="bi bi-diagram-3"></i></div>
                                 <div>
                                     <div class="text-muted small fw-bold text-uppercase">Linea Sangue</div>
                                     <h2 class="mb-0 fw-bold" id="stat-bloodline">0</h2>

@@ -23,7 +23,71 @@ body {
 
 header {
     flex-shrink: 0;
-    background: linear-gradient(135deg, #212529 0%, #343a40 100%);
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+header h1 {
+    color: #1e293b;
+}
+
+header p {
+    color: #64748b;
+}
+
+.input-group-text {
+    background-color: #f8f9fa !important;
+    border-color: #e2e8f0 !important;
+}
+
+#search-input {
+    background-color: #f8f9fa !important;
+    border-color: #e2e8f0 !important;
+}
+
+#search-input:focus {
+    background-color: #ffffff !important;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.form-select-sm {
+    border-radius: 8px;
+    border-color: #e2e8f0;
+    font-weight: 500;
+}
+
+.btn-outline-light {
+    border-color: #e2e8f0;
+    color: #64748b;
+}
+
+.btn-outline-light:hover {
+    background-color: #f8f9fa;
+    border-color: #cbd5e0;
+    color: #1e293b;
+}
+
+.zoom-controls {
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    padding: 6px !important;
+}
+
+.zoom-controls .btn-light {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    font-weight: 600;
+    color: #475569;
+    transition: all 0.2s;
+}
+
+.zoom-controls .btn-light:hover {
+    background: #f8f9fa;
+    color: #1e293b;
+    border-color: #e2e8f0;
 }
 
 main {
@@ -66,24 +130,24 @@ main {
 
 .person {
     flex: 1;
-    padding: 10px;
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    background-color: #ffffff;
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     cursor: pointer !important;
     position: relative;
     z-index: 2;
-    transition: all 0.3s ease;
-    min-height: 80px; /* Altezza minima coerente con Treant */
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 100px;
 }
 
 .person:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-    border-color: #0d6efd;
+    transform: translateY(-6px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+    border-color: #3b82f6;
 }
 
 .virtual-root {
@@ -138,52 +202,37 @@ main {
     display: none;
 }
 
-.bloodline-person .node-name {
-    color: #0d6efd;
-    font-weight: 700;
+.bloodline-person {
+    border-left: 4px solid #3b82f6 !important;
+    background: linear-gradient(to bottom right, #ffffff, #f0f7ff) !important;
 }
 
-.spouse-person .node-name {
-    color: #fd7e14;
-    font-weight: 600;
-}
-
-.node-contact {
-    font-size: 0.75rem;
-    color: #999;
-    margin-top: 2px;
-    margin-bottom: 0;
+.spouse-person {
+    border-left: 4px solid #f59e0b !important;
+    background: linear-gradient(to bottom right, #ffffff, #fffbeb) !important;
 }
 
 .node-name {
-    font-size: 1rem;
-    margin-top: 0;
-    margin-bottom: 2px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #1e293b;
     display: flex;
     align-items: center;
 }
 
-.node-icon {
-    margin-right: 6px;
-    font-size: 0.9rem;
-    opacity: 0.7;
-}
-
-.spouse-person {
-    background-color: #fff9f5;
-    border-radius: 8px;
-}
-
-.bloodline-person {
-    background-color: #f0f7ff;
-    border-radius: 8px;
+.node-contact {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-top: 2px;
 }
 
 .node-title {
     font-size: 0.75rem;
-    color: #6c757d;
+    color: #94a3b8;
     font-style: italic;
-    margin-top: -2px;
+    margin-top: 0;
 }
 
 .cursor-pointer {

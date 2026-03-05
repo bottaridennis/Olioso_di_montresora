@@ -287,8 +287,8 @@ function transformAdminData(node) {
     if (!node) return null;
 
     const isMobile = window.innerWidth <= 992;
-    const nodeWidth = isMobile ? 140 : 160;
-    const nodeHeight = isMobile ? 125 : 140;
+    const nodeWidth = isMobile ? 140 : 180;
+    const nodeHeight = isMobile ? 120 : 140; // Ridotto per matchare index
     const separatorWidth = 30;
     const coupleWidth = (nodeWidth * 2) + separatorWidth;
 
@@ -297,13 +297,15 @@ function transformAdminData(node) {
     };
 
     const bloodlineActions = `
-        <div class="admin-actions">
-            <button class="action-btn btn-edit" onclick="editPerson('${node.id}', 'bloodline')" title="Modifica"><i class="bi bi-pencil"></i></button>
-            ${!node.spouse_data ? `<button class="action-btn btn-spouse" onclick="addSpouse('${node.id}')" title="Aggiungi Partner"><i class="bi bi-plus-circle"></i></button>` : ''}
-            <button class="action-btn btn-delete" onclick="deleteNode('${node.id}')" title="Elimina"><i class="bi bi-trash"></i></button>
-        </div>
-        <div class="admin-actions mt-1" style="opacity: 1">
-            <button class="btn btn-child btn-sm w-100 py-0 extra-small" onclick="addChild('${node.id}')">+ Figlio</button>
+        <div class="admin-actions-container">
+            <div class="admin-actions">
+                <button class="action-btn btn-edit" onclick="editPerson('${node.id}', 'bloodline')" title="Modifica"><i class="bi bi-pencil"></i></button>
+                ${!node.spouse_data ? `<button class="action-btn btn-spouse" onclick="addSpouse('${node.id}')" title="Aggiungi Partner"><i class="bi bi-plus-circle"></i></button>` : ''}
+                <button class="action-btn btn-delete" onclick="deleteNode('${node.id}')" title="Elimina"><i class="bi bi-trash"></i></button>
+            </div>
+            <div class="admin-actions-bottom mt-1">
+                <button class="btn btn-child btn-sm w-100 py-1" onclick="addChild('${node.id}')">+ Figlio</button>
+            </div>
         </div>
     `;
 
@@ -314,17 +316,22 @@ function transformAdminData(node) {
         treantNode.innerHTML = `
             <div class="person-container">
                 <div class="person bloodline-person admin-person-card" data-name="${node.name.toLowerCase()}">
-                    <p class="node-name">👤 ${node.name}</p>
+                    <p class="node-name"><i class="bi bi-person-fill text-primary me-2"></i> ${node.name}</p>
                     <p class="node-contact">${node.contact || ''}</p>
                     ${bloodlineActions}
                 </div>
                 <div class="person spouse-person admin-person-card" data-name="${node.spouse_data.name.toLowerCase()}">
-                    <p class="node-name">⚭ ${node.spouse_data.name}</p>
-                    ${node.spouse_data.title ? `<p class="node-title small italic text-muted">${node.spouse_data.title}</p>` : ''}
+                    <p class="node-name"><i class="bi bi-heart-fill text-warning me-2"></i> ${node.spouse_data.name}</p>
+                    ${node.spouse_data.title ? `<p class="node-title">${node.spouse_data.title}</p>` : ''}
                     <p class="node-contact">${node.spouse_data.contact || ''}</p>
-                    <div class="admin-actions">
-                        <button class="action-btn btn-edit" onclick="editPerson('${node.spouse_data.id}', 'spouse')" title="Modifica"><i class="bi bi-pencil"></i></button>
-                        <button class="action-btn btn-delete" onclick="deleteNode('${node.spouse_data.id}')" title="Elimina"><i class="bi bi-trash"></i></button>
+                    <div class="admin-actions-container">
+                        <div class="admin-actions">
+                            <button class="action-btn btn-edit" onclick="editPerson('${node.spouse_data.id}', 'spouse')" title="Modifica"><i class="bi bi-pencil"></i></button>
+                            <button class="action-btn btn-delete" onclick="deleteNode('${node.spouse_data.id}')" title="Elimina"><i class="bi bi-trash"></i></button>
+                        </div>
+                        <div class="admin-actions-bottom mt-1" style="visibility: hidden;">
+                            <button class="btn btn-sm w-100 py-1">+ Figlio</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -335,7 +342,7 @@ function transformAdminData(node) {
         treantNode.height = nodeHeight;
         treantNode.innerHTML = `
             <div class="person single-person bloodline-person admin-person-card" data-name="${node.name.toLowerCase()}">
-                <p class="node-name">👤 ${node.name}</p>
+                <p class="node-name"><i class="bi bi-person-fill text-primary me-2"></i> ${node.name}</p>
                 <p class="node-contact">${node.contact || ''}</p>
                 ${bloodlineActions}
             </div>
@@ -380,19 +387,29 @@ function renderTreeEditor() {
     const chart_config = {
         chart: {
             container: `#${subContainerId}`,
-            levelSeparation: isMobile ? 250 : 300,
-            siblingSeparation: isMobile ? 450 : 300,
-            subTeeSeparation: isMobile ? 500 : 300,
+            levelSeparation: 350, // Aumentato ulteriormente per dare più spazio verticale
+            siblingSeparation: 450, // Aumentato significativamente per evitare sovrapposizioni orizzontali
+            subTeeSeparation: 500, // Aumentato per separare i rami principali
             rootOrientation: "NORTH",
             nodeAlign: "BOTTOM",
-            padding: isMobile ? 60 : 100,
+            padding: 100, // Più spazio ai bordi del grafico
+            node: {
+                collapsable: false,
+                HTMLclass: 'admin-person-card'
+            },
+            connectors: {
+                type: "step",
+                style: {
+                    "stroke-width": 2,
+                    "stroke": "#cbd5e0"
+                }
+            },
             callback: {
                 onTreeLoaded: function(tree) {
                     const paths = document.querySelectorAll(`#${subContainerId} svg path`);
                     paths.forEach(path => {
                         const d = path.getAttribute('d');
                         if (d) {
-                            // Estraggo il punto di partenza (y) per nascondere i rami della radice virtuale
                             const match = d.match(/^M\s*([\d.-]+)[\s,]+([\d.-]+)/);
                             if (match) {
                                 const y1 = parseFloat(match[2]);
@@ -403,11 +420,11 @@ function renderTreeEditor() {
                     });
                     
                     setTimeout(() => {
-                        if (panzoomInstance) fitToScreen(subContainer);
+                        const el = document.getElementById(subContainerId);
+                        if (panzoomInstance && el) fitToScreen(el);
                     }, 100);
                 }
-            },
-            connectors: { type: "step", style: { "stroke-width": 2, "stroke": "#cbd5e0" } }
+            }
         },
         nodeStructure: nodeStructure
     };
@@ -443,9 +460,11 @@ function initPanzoom(element) {
 }
 
 function fitToScreen(element) {
-    if (!panzoomInstance) return;
+    if (!panzoomInstance || !element) return;
 
     const parent = element.parentElement;
+    if (!parent) return; // Controllo di sicurezza se il genitore non esiste
+
     const parentWidth = parent.clientWidth;
     const parentHeight = parent.clientHeight;
 
